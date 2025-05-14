@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sonic Weapon Calibration</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Monospace&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+    <style>
+        body {
+            font-family: 'Monospace', monospace;
+            background-color: #1f2937; /* Darker Gray-Blue */
+            color: #d1d5db; /* Gray-300 */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 1rem;
+            overflow-x: hidden;
+        }
+        .game-container {
+            background-color: #374151; /* Gray-700 */
+            border: 2px solid #ef4444; /* Red-500 */
+            border-radius: 0.5rem;
+            padding: 1.5rem;
+            width: 100%;
+            max-width: 700px;
+            box-shadow: 0 0 25px rgba(239, 68, 68, 0.5); /* Red shadow */
+        }
+        .stage {
+            border: 1px dashed #6b7280; /* Gray-500 */
+            padding: 1rem;
+            margin-bottom: 1rem;
+            border-radius: 0.25rem;
+        }
+        h1 {
+            color: #f87171; /* Red-400 */
+            text-shadow: 0 0 7px #ef4444;
+            font-size: 1.75rem; /* 28px */
+            line-height: 2.25rem; /* 36px */
+        }
+        h2 {
+            color: #fca5a5; /* Red-300 */
+            text-shadow: 0 0 5px #f87171;
+            font-size: 1.25rem; /* 20px */
+            line-height: 1.75rem; /* 28px */
+        }
+        label {
+            color: #fecaca; /* Red-200 */
+        }
+        input[type="range"] {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 100%;
+            height: 10px;
+            background: #4b5563; /* Gray-600 */
+            outline: none;
+            opacity: 0.8;
+            transition: opacity .2s;
+            border-radius: 5px;
+            margin-top: 0.5rem;
+            margin-bottom: 0.5rem;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 22px;
+            height: 22px;
+            background: #ef4444; /* Red-500 */
+            cursor: pointer;
+            border-radius: 50%;
+            border: 2px solid #1f2937; /* Darker Gray-Blue */
+            box-shadow: 0 0 6px #ef4444;
+        }
+        input[type="range"]::-moz-range-thumb {
+            width: 22px;
+            height: 22px;
+            background: #ef4444; /* Red-500 */
+            cursor: pointer;
+            border-radius: 50%;
+            border: 2px solid #1f2937; /* Darker Gray-Blue */
+            box-shadow: 0 0 6px #ef4444;
+        }
+        input[type="checkbox"] {
+            accent-color: #ef4444; /* Red-500 for checkbox */
+            width: 1.25rem; /* 20px */
+            height: 1.25rem; /* 20px */
+        }
+        .btn {
+            background-color: #dc2626; /* Red-600 */
+            color: white;
+            padding: 0.6rem 1.1rem;
+            border-radius: 0.25rem;
+            border: none;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            text-shadow: 0 0 3px rgba(0,0,0,0.6);
+            font-weight: 600; /* semibold */
+        }
+        .btn:hover {
+            background-color: #b91c1c; /* Red-700 */
+        }
+        .btn:disabled {
+            background-color: #6b7280; /* Gray-500 */
+            cursor: not-allowed;
+            opacity: 0.7;
+        }
+        .fire-btn { /* Special button for firing */
+            background-color: #ef4444; /* Red-500 */
+            font-size: 1.25rem;
+            padding: 0.75rem 1.5rem;
+        }
+        .fire-btn:hover {
+            background-color: #dc2626; /* Red-600 */
+        }
+        .feedback {
+            margin-top: 0.5rem;
+            font-size: 0.9rem; /* 14px */
+            min-height: 1.4rem; /* 20px */
+            font-weight: 600;
+        }
+        .correct {
+            color: #34d399; /* Emerald-500 */
+        }
+        .incorrect {
+            color: #f59e0b; /* Amber-500 (warning) */
+        }
+        .critical-failure {
+             color: #f87171; /* Red-400 (more intense failure) */
+        }
+        .progress-bar-container {
+            width: 100%;
+            background-color: #4b5563; /* Gray-600 */
+            border-radius: 4px;
+            height: 22px;
+            margin-top: 0.5rem;
+            border: 1px solid #6b7280;
+        }
+        .progress-bar {
+            width: 0%;
+            height: 100%;
+            background-color: #34d399; /* Emerald-500 */
+            border-radius: 3px;
+            transition: width 0.1s linear;
+        }
+        .hidden {
+            display: none;
+        }
+        .waveform-placeholder {
+            height: 50px;
+            background-color: #111827; /* Gray-900, very dark */
+            border: 1px solid #4b5563; /* Gray-600 */
+            margin-bottom: 0.5rem;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+            color: #9ca3af; /* Gray-400 */
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <h1 class="text-3xl font-bold mb-3 text-center">SONIC WEAPON - FIRING CALIBRATION</h1>
+        <p class="mb-5 text-sm text-center text-red-300">WARNING: Extreme energies involved. Precision is critical for "Harmonic Shattering" wave.</p>
+
+        <div id="stage1_weapon" class="stage">
+            <h2 class="text-xl font-semibold mb-2">Phase 1: Primary Resonant Frequency Lock</h2>
+            <!-- <p class="text-sm mb-2">Target Operational Core Frequency: <span id="targetFreqDisplay_weapon" class="font-bold text-red-300">472.5 THz</span> (Voss Protocol)</p> -->
+            <div>
+                <label for="coreFreqDial_weapon">Emitter Core Frequency (THz): <span id="coreFreqVal_weapon">400.0</span> THz</label>
+                <input type="range" id="coreFreqDial_weapon" min="4000" max="5500" value="4000" step="1"> </div>
+            <div class="waveform-placeholder">Core Resonance Monitor</div>
+            <div id="stage1Feedback_weapon" class="feedback">Adjust dial to match target frequency.</div>
+            <button id="checkStage1_weapon" class="btn mt-2">Lock Core Frequency</button>
+        </div>
+
+        <div id="stage2_weapon" class="stage hidden">
+            <h2 class="text-xl font-semibold mb-2">Phase 2: Destructive Harmonic Matrix</h2>
+            <!-- <p class="text-sm mb-2">Align sub-harmonics for cascading failure (Voss Protocol):</p>
+            <ul class="list-disc list-inside text-sm mb-3">
+                <li>Harmonic Alpha (2nd): Phase Inversion Required.</li>
+                <li>Harmonic Beta (4th): Amplitude Boost to +12dB.</li>
+                <li>Harmonic Gamma (5th): Attenuate Output to 0.75 (relative).</li>
+            </ul> -->
+
+            <div class="mb-3 p-2 border border-gray-600 rounded">
+                <label class="font-semibold text-red-300">Harmonic Alpha (2nd):</label>
+                <div class="flex items-center mt-1">
+                    <input type="checkbox" id="harmonicAlphaPhase_weapon" class="mr-2"> <span>Invert Phase</span>
+                </div>
+                <div class="waveform-placeholder mt-1">Alpha Destructor Waveform</div>
+            </div>
+
+            <div class="mb-3 p-2 border border-gray-600 rounded">
+                <label for="harmonicBetaAmplitude_weapon" class="font-semibold text-red-300">Harmonic Beta (4th) Amplitude (dB): <span id="harmonicBetaVal_weapon">-20</span> dB</label>
+                <input type="range" id="harmonicBetaAmplitude_weapon" min="-20" max="20" value="-20" step="1">
+                <div class="waveform-placeholder mt-1">Beta Force-Carrier Waveform</div>
+            </div>
+
+            <div class="mb-3 p-2 border border-gray-600 rounded">
+                <label for="harmonicGammaAttenuation_weapon" class="font-semibold text-red-300">Harmonic Gamma (5th) Output: <span id="harmonicGammaVal_weapon">0.00</span></label>
+                <input type="range" id="harmonicGammaAttenuation_weapon" min="0" max="200" value="0" step="1"> <div class="waveform-placeholder mt-1">Gamma Penetrator Waveform</div>
+            </div>
+            
+            <div class="waveform-placeholder mt-2 h-16">Combined Destructive Harmonic Matrix</div>
+            <div id="stage2Feedback_weapon" class="feedback">Adjust harmonic controls for weaponization.</div>
+            <button id="checkStage2_weapon" class="btn mt-2">Align Harmonic Matrix</button>
+        </div>
+
+        <div id="stage3_weapon" class="stage hidden">
+            <h2 class="text-xl font-semibold mb-2">Phase 3: Waveform Stabilization & Lock</h2>
+            <!-- <p class="text-sm mb-2">Maintain stable output amplitude (Target: <span class="font-bold text-red-300">75%</span>) against internal interference for 5 seconds before firing.</p> -->
+            
+            <div class="mb-2">
+                <label>Internal Interference Level (Target Output: 75%):</label>
+                <div class="progress-bar-container mt-1">
+                    <div id="interferenceBar_weapon" class="progress-bar bg-yellow-500"></div> </div>
+            </div>
+
+            <div>
+                <label for="weaponOutputAmplitude_weapon">Your Output Amplitude Control: <span id="weaponOutputVal_weapon">50</span>%</label>
+                <input type="range" id="weaponOutputAmplitude_weapon" min="0" max="100" value="50">
+            </div>
+            
+            <div class="mt-3">
+                <label>Resonance Lock Progress:</label>
+                <div class="progress-bar-container">
+                    <div id="resonanceLockProgress_weapon" class="progress-bar"></div>
+                </div>
+            </div>
+            <div id="stage3Feedback_weapon" class="feedback">Counteract interference to stabilize output at 75%.</div>
+        </div>
+
+        <div id="fireSequenceDiv" class="hidden text-center mt-6">
+             <button id="fireWeaponButton" class="btn fire-btn w-full">INITIATE FIRING SEQUENCE</button>
+        </div>
+        <div id="weaponOutcomeMessage" class="hidden text-center mt-6">
+            <h2 id="weaponOutcomeTitle" class="text-3xl font-bold"></h2>
+            <p id="weaponOutcomeText" class="text-lg"></p>
+        </div>
+    </div>
+
+    <script>
+        // --- Sound Synthesis ---
+        const masterVolumeWeapon = new Tone.Volume(-8).toDestination(); // Weapon sounds can be louder
+        const coreHumWeapon = new Tone.Oscillator("C2", "sine").connect(new Tone.Tremolo(5, 0.5).start().connect(masterVolumeWeapon));
+        coreHumWeapon.volume.value = -20;
+
+        const harmonicSynthWeapon = new Tone.FMSynth({
+            harmonicity: 1.2,
+            modulationIndex: 5,
+            envelope: { attack: 0.01, decay: 0.1, sustain: 0.05, release: 0.1 },
+            modulationEnvelope: { attack: 0.01, decay: 0.1, sustain: 0.05, release: 0.1 }
+        }).connect(masterVolumeWeapon);
+
+        const alarmSynthWeapon = new Tone.NoiseSynth({
+            noise: { type: "white" },
+            envelope: { attack: 0.005, decay: 0.1, sustain: 0, release: 0.1 }
+        }).connect(masterVolumeWeapon);
+        alarmSynthWeapon.volume.value = -15;
+
+        const successBlastWeapon = new Tone.NoiseSynth({
+            noise: {type: "brown"},
+            envelope: {attack: 0.1, decay: 1.5, sustain: 0, release: 0.5}
+        }).connect(masterVolumeWeapon);
+        successBlastWeapon.volume.value = -5; // Loud!
+        
+        const chargeSynth = new Tone.Oscillator("A1", "sawtooth").toDestination();
+        chargeSynth.volume.value = -Infinity; // Start silent
+
+
+        function playWeaponSuccess() {
+            Tone.loaded().then(() => {
+                successBlastWeapon.triggerAttackRelease("2s", Tone.now());
+                // Add a rising pitch effect for charging
+                chargeSynth.frequency.value = "A1";
+                chargeSynth.volume.rampTo(-10, 0.1);
+                chargeSynth.frequency.rampTo("A3", 1.5); // Ramp pitch up over 1.5 seconds
+                chargeSynth.start(Tone.now());
+                chargeSynth.stop(Tone.now() + 1.5);
+                chargeSynth.volume.rampTo(-Infinity, 0.1, Tone.now() + 1.5);
+            });
+        }
+        function playWeaponFailure() {
+             Tone.loaded().then(() => {
+                alarmSynthWeapon.triggerAttackRelease("0.5s", Tone.now());
+                harmonicSynthWeapon.triggerAttackRelease("A#2", "0.5s", Tone.now() + 0.1); // Dissonant
+            });
+        }
+        function playWeaponTick() {
+            Tone.loaded().then(() => {
+                harmonicSynthWeapon.triggerAttackRelease("C3", "32n", Tone.now());
+            });
+        }
+         function playResonanceLockSound() {
+            Tone.loaded().then(() => {
+                harmonicSynthWeapon.triggerAttackRelease("A5", "16n", Tone.now());
+            });
+        }
+
+        // --- Game State & Elements ---
+        let currentStageWeapon = 1;
+        const targetCoreFrequencyWeapon = 472.5;
+
+        // Stage 1 Elements
+        const stage1DivWeapon = document.getElementById('stage1_weapon');
+        const coreFreqDialWeapon = document.getElementById('coreFreqDial_weapon');
+        const coreFreqValWeapon = document.getElementById('coreFreqVal_weapon');
+        const stage1FeedbackWeapon = document.getElementById('stage1Feedback_weapon');
+        const checkStage1BtnWeapon = document.getElementById('checkStage1_weapon');
+        //document.getElementById('targetFreqDisplay_weapon').textContent = targetCoreFrequencyWeapon.toFixed(1) + " THz";
+
+        // Stage 2 Elements
+        const stage2DivWeapon = document.getElementById('stage2_weapon');
+        const harmonicAlphaPhaseWeapon = document.getElementById('harmonicAlphaPhase_weapon');
+        const harmonicBetaAmplitudeWeapon = document.getElementById('harmonicBetaAmplitude_weapon');
+        const harmonicBetaValWeapon = document.getElementById('harmonicBetaVal_weapon');
+        const harmonicGammaAttenuationWeapon = document.getElementById('harmonicGammaAttenuation_weapon');
+        const harmonicGammaValWeapon = document.getElementById('harmonicGammaVal_weapon');
+        const stage2FeedbackWeapon = document.getElementById('stage2Feedback_weapon');
+        const checkStage2BtnWeapon = document.getElementById('checkStage2_weapon');
+
+        // Stage 3 Elements
+        const stage3DivWeapon = document.getElementById('stage3_weapon');
+        const interferenceBarWeapon = document.getElementById('interferenceBar_weapon');
+        const weaponOutputAmplitudeWeapon = document.getElementById('weaponOutputAmplitude_weapon');
+        const weaponOutputValWeapon = document.getElementById('weaponOutputVal_weapon');
+        const resonanceLockProgressWeapon = document.getElementById('resonanceLockProgress_weapon');
+        const stage3FeedbackWeapon = document.getElementById('stage3Feedback_weapon');
+
+        const fireSequenceDiv = document.getElementById('fireSequenceDiv');
+        const fireWeaponButton = document.getElementById('fireWeaponButton');
+        const weaponOutcomeMessage = document.getElementById('weaponOutcomeMessage');
+        const weaponOutcomeTitle = document.getElementById('weaponOutcomeTitle');
+        const weaponOutcomeText = document.getElementById('weaponOutcomeText');
+
+        // --- Stage 1 Logic ---
+        coreFreqDialWeapon.addEventListener('input', () => {
+            const displayValue = parseFloat(coreFreqDialWeapon.value) / 10;
+            coreFreqValWeapon.textContent = displayValue.toFixed(1);
+            playWeaponTick();
+            coreHumWeapon.frequency.rampTo(100 + displayValue / 5, 0.1);
+        });
+
+        checkStage1BtnWeapon.addEventListener('click', () => {
+            const currentFreq = parseFloat(coreFreqDialWeapon.value) / 10;
+            if (Math.abs(currentFreq - targetCoreFrequencyWeapon) < 0.1) {
+                stage1FeedbackWeapon.textContent = "Core Frequency Locked and Stable!";
+                stage1FeedbackWeapon.className = 'feedback correct';
+                playWeaponSuccess(); // Use a more impactful success for weapon
+                checkStage1BtnWeapon.disabled = true;
+                coreFreqDialWeapon.disabled = true;
+                coreHumWeapon.start(); // Start a persistent hum
+                setTimeout(() => {
+                    stage1DivWeapon.classList.add('hidden');
+                    stage2DivWeapon.classList.remove('hidden');
+                    currentStageWeapon = 2;
+                }, 1500);
+            } else {
+                stage1FeedbackWeapon.textContent = "ERROR: Core Frequency Mismatch. Target: " + targetCoreFrequencyWeapon.toFixed(1) + " THz";
+                stage1FeedbackWeapon.className = 'feedback incorrect';
+                playWeaponFailure();
+            }
+        });
+
+        // --- Stage 2 Logic ---
+        const targetAlphaPhaseInvertedWeapon = true;
+        const targetBetaAmplitudeWeapon = 12; 
+        const targetGammaOutputWeapon = 0.75;
+
+        harmonicBetaAmplitudeWeapon.addEventListener('input', () => {
+            harmonicBetaValWeapon.textContent = harmonicBetaAmplitudeWeapon.value;
+            playWeaponTick();
+        });
+        harmonicGammaAttenuationWeapon.addEventListener('input', () => {
+            const displayValue = parseFloat(harmonicGammaAttenuationWeapon.value) / 100;
+            harmonicGammaValWeapon.textContent = displayValue.toFixed(2);
+            playWeaponTick();
+        });
+         harmonicAlphaPhaseWeapon.addEventListener('change', () => {
+            playWeaponTick();
+        });
+
+        checkStage2BtnWeapon.addEventListener('click', () => {
+            const alphaCorrect = harmonicAlphaPhaseWeapon.checked === targetAlphaPhaseInvertedWeapon;
+            const betaCorrect = parseInt(harmonicBetaAmplitudeWeapon.value) === targetBetaAmplitudeWeapon;
+            const gammaCorrect = Math.abs((parseFloat(harmonicGammaAttenuationWeapon.value) / 100) - targetGammaOutputWeapon) < 0.01;
+
+            if (alphaCorrect && betaCorrect && gammaCorrect) {
+                stage2FeedbackWeapon.textContent = "Destructive Harmonic Matrix Aligned!";
+                stage2FeedbackWeapon.className = 'feedback correct';
+                playWeaponSuccess();
+                checkStage2BtnWeapon.disabled = true;
+                harmonicAlphaPhaseWeapon.disabled = true;
+                harmonicBetaAmplitudeWeapon.disabled = true;
+                harmonicGammaAttenuationWeapon.disabled = true;
+                setTimeout(() => {
+                    stage2DivWeapon.classList.add('hidden');
+                    stage3DivWeapon.classList.remove('hidden');
+                    currentStageWeapon = 3;
+                    startStage3Weapon();
+                }, 1500);
+            } else {
+                let errorMsg = "CRITICAL ERROR - Harmonic Misalignment: ";
+                if (!alphaCorrect) errorMsg += "Alpha Phase incorrect (Hint: Inversion needed for instability field). ";
+                if (!betaCorrect) errorMsg += "Beta Amplitude incorrect (Hint: Target +12dB for force projection). ";
+                if (!gammaCorrect) errorMsg += "Gamma Output incorrect (Hint: Target 0.75 for shield penetration). ";
+                stage2FeedbackWeapon.textContent = errorMsg;
+                stage2FeedbackWeapon.className = 'feedback incorrect';
+                playWeaponFailure();
+            }
+        });
+
+        // --- Stage 3 Logic ---
+        let interferenceIntervalWeapon;
+        let resonanceLockIntervalWeapon;
+        let currentInterferenceLevelWeapon = 50; // This represents the target the player must match
+        const targetWeaponOutputStabilization = 75; // Player needs to keep their output at this level.
+        let resonanceLockDurationWeapon = 0;
+        const requiredResonanceLockDurationWeapon = 5000; // 5 seconds
+        const stabilizationToleranceWeapon = 5; // Player output must be within this range of targetWeaponOutputStabilization
+
+        weaponOutputAmplitudeWeapon.addEventListener('input', () => {
+            weaponOutputValWeapon.textContent = weaponOutputAmplitudeWeapon.value;
+            // Change hum based on how close they are to target
+            const diff = Math.abs(parseInt(weaponOutputAmplitudeWeapon.value) - targetWeaponOutputStabilization);
+            coreHumWeapon.frequency.rampTo(150 + (50 - diff) * 2 , 0.05); // More intense hum when closer
+        });
+
+        function updateInterferenceWeapon() {
+            // The "interference" is actually the weapon's internal target amplitude fluctuating
+            // For this puzzle, we'll make the *target* fixed, and the player has to hold THEIR output there.
+            // The "interferenceBar" will represent how close the PLAYER is to the target.
+            // This is a bit of a re-interpretation of the "interference" idea to make the puzzle work.
+            // Let's make the target fixed at 75% as per the instructions.
+            // The bar will show the player's current amplitude.
+            interferenceBarWeapon.style.width = weaponOutputAmplitudeWeapon.value + '%';
+            if (Math.abs(parseInt(weaponOutputAmplitudeWeapon.value) - targetWeaponOutputStabilization) <= stabilizationToleranceWeapon) {
+                interferenceBarWeapon.classList.remove('bg-yellow-500', 'bg-red-500');
+                interferenceBarWeapon.classList.add('bg-green-500');
+            } else if (Math.abs(parseInt(weaponOutputAmplitudeWeapon.value) - targetWeaponOutputStabilization) <= stabilizationToleranceWeapon * 2) {
+                interferenceBarWeapon.classList.remove('bg-green-500', 'bg-red-500');
+                interferenceBarWeapon.classList.add('bg-yellow-500');
+            } else {
+                interferenceBarWeapon.classList.remove('bg-green-500', 'bg-yellow-500');
+                interferenceBarWeapon.classList.add('bg-red-500');
+            }
+        }
+
+        function checkResonanceLockWeapon() {
+            const currentWeaponOutput = parseInt(weaponOutputAmplitudeWeapon.value);
+            if (Math.abs(currentWeaponOutput - targetWeaponOutputStabilization) <= stabilizationToleranceWeapon) {
+                resonanceLockDurationWeapon += 100; 
+                 if(resonanceLockDurationWeapon % 500 === 0 && resonanceLockDurationWeapon > 0) playResonanceLockSound();
+            } else {
+                resonanceLockDurationWeapon = 0; 
+            }
+            resonanceLockProgressWeapon.style.width = (resonanceLockDurationWeapon / requiredResonanceLockDurationWeapon) * 100 + '%';
+
+            if (resonanceLockDurationWeapon >= requiredResonanceLockDurationWeapon) {
+                stage3FeedbackWeapon.textContent = "Waveform Stabilized! Resonance Lock Achieved!";
+                stage3FeedbackWeapon.className = 'feedback correct';
+                playWeaponSuccess();
+                clearInterval(interferenceIntervalWeapon); // Stop updating the "interference" bar as it's now locked
+                clearInterval(resonanceLockIntervalWeapon);
+                weaponOutputAmplitudeWeapon.disabled = true;
+                coreHumWeapon.frequency.rampTo(400, 0.1); // High intense hum for ready state
+                setTimeout(() => {
+                    stage3DivWeapon.classList.add('hidden');
+                    fireSequenceDiv.classList.remove('hidden'); // Show fire button
+                }, 1500);
+            }
+        }
+
+        function startStage3Weapon() {
+            Tone.start(); 
+            interferenceIntervalWeapon = setInterval(updateInterferenceWeapon, 100); // Update player's output display
+            resonanceLockIntervalWeapon = setInterval(checkResonanceLockWeapon, 100);
+            coreHumWeapon.frequency.rampTo(150, 0.1); // Initial hum for this stage
+        }
+
+        fireWeaponButton.addEventListener('click', () => {
+            fireSequenceDiv.classList.add('hidden');
+            weaponOutcomeTitle.textContent = "SUCCESS: HARMONIC SHATTERING WAVE INITIATED!";
+            weaponOutcomeTitle.className = "text-3xl font-bold text-green-400";
+            weaponOutcomeText.textContent = "Alien forces in the sector are annihilated. Humanity has a new, powerful defense. The future is uncertain, but there is hope.";
+            weaponOutcomeMessage.classList.remove('hidden');
+            playWeaponSuccess(); // Big firing sound
+            coreHumWeapon.stop(Tone.now() + 2); // Stop hum after firing
+        });
+        
+        // This is a placeholder for a potential failure condition if integrated into a larger game
+        // For this standalone puzzle, successful completion of Stage 3 leads to the "fire" button.
+        // A true "failure" for the weapon would be if the player clicks "FIRE" but calibration was wrong.
+        // Here, we assume calibration is correct if they reach the fire button.
+
+        document.body.addEventListener('click', () => Tone.start(), { once: true });
+    </script>
+</body>
+</html>
